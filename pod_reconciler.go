@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"time"
-	"k8s.io/klog"
 )
 
 type PodReconciler interface {
@@ -26,7 +25,6 @@ type podReconciler struct {
 }
 
 func NewPodReconciler(client kubernetes.Interface) (PodReconciler, error) {
-	klog.Infof("a")
 	informerFactory := informers.NewSharedInformerFactory(client, 0)
 	stopCh := make(chan struct{})
 	queue := workqueue.NewRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second, 5*time.Minute))
@@ -48,7 +46,6 @@ func NewPodReconciler(client kubernetes.Interface) (PodReconciler, error) {
 	if !cache.WaitForCacheSync(stopCh, pr.podSynced) {
 		return nil, nil
 	}
-	klog.Infof("b")
 	return pr, nil
 }
 func (pr *podReconciler) podAdd(obj interface{}) {
@@ -113,12 +110,8 @@ func (pr *podReconciler) reconcile (key string) error {
 		return err
 	}
 	podAnnotations := pod.GetAnnotations()
-	if podAnnotations == nil {
-		podAnnotations = make(map[string]string)
-	}
 	if _, ok := podAnnotations["timestamp"]; !ok {
 		// Add timestamp to Pod
-
 		podAnnotations["timestamp"] = time.Now().String()
 		pod.SetAnnotations(podAnnotations)
 		_, err = pr.k8sclient.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})

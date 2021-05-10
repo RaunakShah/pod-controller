@@ -2,25 +2,34 @@ package main
 
 import (
 	"context"
+	"os"
+
+	"github.com/RaunakShah/custom-controller/pkg"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
-	"time"
-	"github.com/RaunakShah/custom-controller/pkg"
 )
 
 func main() {
-	klog.Infof("1")
+	klog.Infof("Creating Kubernetes client for Pod timestamp reconciler")
+	// Create kubernetes client from in cluster config file.
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		klog.Infof("Error")
+		klog.Errorf("failed to get config with error %v", err)
+		os.Exit(1)
 	}
-	klog.Infof("1")
 	k8sclient, err := kubernetes.NewForConfig(config)
-	klog.Infof("2")
+	if err != nil {
+		klog.Errorf("failed to create k8s client with error %v", err)
+		os.Exit(1)
+	}
+	// Initialize New Pod reconciler.
 	pr, err := pkg.NewPodReconciler(k8sclient)
-	klog.Infof("3")
+	if err != nil {
+		klog.Errorf("failed to create new pod reconciler with error %v", err)
+		os.Exit(1)
+	}
+	// Run the reconciler.
 	pr.Run(context.TODO(), 10)
-	klog.Infof("4")
-	time.Sleep(5*time.Minute)
+
 }

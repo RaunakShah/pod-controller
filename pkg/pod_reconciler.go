@@ -75,7 +75,7 @@ func (pr *podReconciler) podAdd(obj interface{}) {
 		klog.Errorf("failed to get pod key with error %v", err)
 		return
 	}
-	klog.V(4).Infof("Adding Pod %s to queue", objKey)
+	klog.V(4).Infof("Adding Pod %s to workqueue", objKey)
 	pr.podQueue.Add(objKey)
 }
 
@@ -130,20 +130,22 @@ func (pr *podReconciler) reconcile (key string) error {
 	klog.Infof("Reconciling Pod %s", key)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
+		klog.Errorf("failed to split key with error %v", err)
 		return err
 	}
 	pod, err := pr.podLister.Pods(namespace).Get(name)
 	if err != nil {
+		klog.Errorf("failed to get Pod %s/%s with error %v", namespace, name, err)
 		return err
 	}
 	podAnnotations := pod.GetAnnotations()
 	if podAnnotations == nil {
 		podAnnotations = make(map[string]string)
 	}
-	klog.Infof("Existing annotations on Pod %s/%s: %v", namespace, name, podAnnotations)
+	klog.V(4).Infof("Existing annotations on Pod %s/%s: %v", namespace, name, podAnnotations)
 	if pr.waitForAnnotation {
 		if _, ok := podAnnotations["add-timestamp"]; !ok {
-			klog.Infof("Annotation add-timestamp doesnt exist, igonoring ...")
+			klog.V(4).Infof("Annotation add-timestamp doesnt exist, igonoring ...")
 			return nil
 		}
 	}
@@ -153,6 +155,7 @@ func (pr *podReconciler) reconcile (key string) error {
 		pod.SetAnnotations(podAnnotations)
 		_, err = pr.k8sclient.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		if err != nil {
+			klog.Errorf("failed to update Pod %s/%s with timestamp due to error %v", namespace, name, err)
 			return err
 		}
 		klog.Infof("Added timestamp %v to Pod %s/%s", podAnnotations["timestamp"], namespace, name)

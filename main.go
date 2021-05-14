@@ -20,8 +20,10 @@ var (
 	onlyRespondToAnnotation = flag.Bool("only-respond-to-annotation", false, "If set, reconciler only adds timestamp annotation to Pods that are annotated with add-timestamp")
 	enableLeaderElection    = flag.Bool("leader-election", false, "Enable leader election.")
 )
+
 func main() {
 	flag.Parse()
+	klog.InitFlags(nil)
 	klog.Infof("Creating Kubernetes client for Pod timestamp reconciler")
 	// Create kubernetes client from in cluster config file.
 	config, err := rest.InClusterConfig()
